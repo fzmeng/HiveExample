@@ -1,35 +1,83 @@
 package com.m.hive;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
 
 /**
  * @author mengfanzhu
  * @Package com.m.hive
- * @Description: Hive jdbc连接
- * @date 17/4/3 11:31
+ * @Description:
+ * @date 17/4/3 11:57
  */
 public class HiveJdbc {
-    public static void main(String[] args) throws Exception{
-        Class.forName("org.apache.hive.jdbc.HiveDriver");
+    private static String driverName = "org.apache.hive.jdbc.HiveDriver";//jdbc驱动路径
+    private static String url = "jdbc:hive2://10.211.55.5:10000/dbmfz";//hive库地址+库名
+    private static String user = "mfz";//用户名
+    private static String password = "111111";//密码
 
-        String dropSQL="drop table javaTest";
-        String createSQL="create table javaTest (key int, value string)";
-        String insterSQL="LOAD DATA LOCAL INPATH '/Users/mfz/Desktop/config.properties' OVERWRITE INTO TABLE javaTest";
-        String querySQL="SELECT a.* FROM javaTest a";
+    public static void main(String[] args) {
+        Connection conn = null;
+        Statement stmt = null;
+        ResultSet res = null;
+        try {
+            conn = getConn();
+            System.out.println(conn);
+            stmt = conn.createStatement();
+            stmt.execute("drop table hivetest");
+            stmt.execute("CREATE TABLE if not EXISTS hivetest(" +
+                    "ymd date," +
+                    "price_open FLOAT ," +
+                    "price_high FLOAT ," +
+                    "price_low FLOAT ," +
+                    "price_close float," +
+                    "volume int," +
+                    "price_adj_close FLOAT" +
+                    ")partitioned by (exchanger string,symbol string)" +
+                    "row format delimited fields terminated by ','");
+            stmt.execute("LOAD DATA LOCAL INPATH '/home/mfz/apache-hive-2.1.1-bin/hivedata/stocks.csv' " +
+                    "OVERWRITE INTO TABLE hivetest partition(exchanger=\"NASDAQ\",symbol=\"INTC\")");
+            res = stmt.executeQuery("select * from hivetest limit 10");
+            System.out.println("执行 select * query 运行结果:");
+            while (res.next()) {
+                System.out.println(
+                        "日期:"+res.getString(1)+
+                        "|price_open:"+res.getString(2)+
+                        "|price_hign："+res.getString(3)+
+                        "|price_low："+res.getString(4)+
+                        "|price_close："+res.getString(5)+
+                        "|volume:"+res.getString(6)+
+                        "|price_adj_close:"+res.getString(7)+
+                        "|exchanger:"+res.getString(8)+
+                        "|symbol:"+res.getString(9));
+            }
 
-        Connection con = DriverManager.getConnection("jdbc:hive2://10.255.55.5:10000/dbmfz", "hadoop", "hadoop");
-        Statement stmt = con.createStatement();
-        stmt.executeQuery(dropSQL);  // 执行删除语句
-        stmt.executeQuery(createSQL);  // 执行建表语句
-        stmt.executeQuery(insterSQL);  // 执行插入语句
-        ResultSet res = stmt.executeQuery(querySQL);   // 执行查询语句
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            System.exit(1);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }finally {
+            try{
+                if(null!=res){
+                    res.close();
+                }
+                if(null!=stmt){
+                    stmt.close();
+                }
+                if(null!=conn){
+                    conn.close();
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }
 
-        while (res.next()) {
-            System.out.println("Result: key:"+res.getString(1) +"  –>  value:" +res.getString(2));
         }
+    }
 
+    private static Connection getConn() throws ClassNotFoundException,
+            SQLException {
+        Class.forName(driverName);
+        Connection conn = DriverManager.getConnection(url, user, password);
+        return conn;
     }
 }
