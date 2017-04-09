@@ -6,7 +6,7 @@ import java.sql.*;
  * @author mengfanzhu
  * @Package com.m.hive
  * @Description:
- * @date 17/4/3 11:57
+ * @date 17/4/8 11:57
  */
 public class HiveJdbc {
     private static String driverName = "org.apache.hive.jdbc.HiveDriver";//jdbc驱动路径
